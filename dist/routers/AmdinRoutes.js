@@ -61,7 +61,7 @@ AdminRouter.post("/login", [
                             let token = jsonwebtoken_1.default.sign(payLoad, config_1.default.ADMIN_SECRET_KEY);
                             user = await User_1.default.findOneAndUpdate({ userName: user.userName }, { lastLogIn: new Date() });
                             userData = {};
-                            res.cookie("adminToken", token, { httpOnly: true, sameSite: 'lax', secure: false, maxAge: 1000 * 60 * 60 * 24 * 30, });
+                            res.cookie("adminToken", token, { httpOnly: true, sameSite: 'none', secure: true, maxAge: 1000 * 60 * 60 * 24 * 30, });
                             return res.status(200).json(userData);
                         }
                         else {

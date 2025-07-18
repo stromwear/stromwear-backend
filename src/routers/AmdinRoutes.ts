@@ -63,7 +63,7 @@ AdminRouter.post("/login",[
                             let token:string = jwt.sign(payLoad,config.ADMIN_SECRET_KEY);
                             user = await User.findOneAndUpdate({userName:user.userName},{lastLogIn:new Date()});
                             userData = {} as UserView;
-                            res.cookie("adminToken", token, {httpOnly: true,sameSite:'lax',secure: false,maxAge: 1000 * 60 * 60 * 24 * 30,}); 
+                            res.cookie("adminToken", token, {httpOnly: true,sameSite:'none',secure: true,maxAge: 1000 * 60 * 60 * 24 * 30,}); 
                             return res.status(200).json(userData);
                         }
                         else {
