@@ -41,7 +41,16 @@ CartRouter.post("/add-to-cart", AuthUser_1.default, async (req, res) => {
         else {
             const existingItem = cart.items.find(i => i.itemId.toString() === itemId && i.selectedSize === selectedSize);
             if (existingItem) {
-                existingItem.quantity = Math.max(1, existingItem.quantity + quantity);
+                const availableItem = await Item_1.default.findById(itemId);
+                if (availableItem) {
+                    const sizeQty = availableItem.size[selectedSize] ?? 0;
+                    if (sizeQty >= existingItem.quantity + quantity) {
+                        existingItem.quantity = Math.max(1, existingItem.quantity + quantity);
+                    }
+                    else {
+                        return res.status(400).json({ errorMessage: "Not enough quantity available for selected size" });
+                    }
+                }
             }
             else {
                 cart.items.push({ itemId, price: item.price, selectedSize, quantity, image: item.image });
@@ -140,32 +149,88 @@ CartRouter.post("/create-order", async (req, res) => {
 });
 CartRouter.post("/verify-payment", async (req, res) => {
     try {
-        const { order_id, payment_id, signature, userData, mobile, address } = req.body;
+        const { order_id, payment_id, signature, pinCode, userData, mobile, address } = req.body;
+        let Status = "captured";
         if (!RAZORPAY_KEY_SECRET) {
-            return res.status(500).json("Environment error");
+            Status = "failed";
         }
-        const expectedSignature = crypto_1.default.createHmac("sha256", RAZORPAY_KEY_SECRET).update(order_id + "|" + payment_id).digest("hex");
-        if (expectedSignature !== signature) {
-            return res.status(400).json({ success: false, error: "Invalid signature" });
+        if (RAZORPAY_KEY_SECRET) {
+            const expectedSignature = crypto_1.default.createHmac("sha256", RAZORPAY_KEY_SECRET).update(order_id + "|" + payment_id).digest("hex");
+            if (expectedSignature !== signature) {
+                Status = "failed";
+            }
         }
         const userName = userData?.userName;
-        if (!userName)
-            return res.status(400).json({ error: "User data missing" });
+        if (!userName) {
+            Status = "failed";
+        }
         const cart = await Cart_1.default.findOne({ userName });
         if (!cart || cart.items.length === 0) {
-            return res.status(400).json({ error: "Cart is empty" });
+            Status = "failed";
+            await Order_1.default.create({
+                userName,
+                orderId: order_id,
+                paymentId: payment_id,
+                mobile: mobile,
+                address: address,
+                paymentMode: "online",
+                pinCode: pinCode,
+                items: [],
+                amount: 0,
+                status: Status,
+            });
         }
-        await Order_1.default.create({
-            userName,
-            orderId: order_id,
-            paymentId: payment_id,
-            mobile: mobile,
-            address: address,
-            items: cart.items,
-            amount: cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0) + 50,
-            status: "captured",
-        });
-        return res.json({ success: true, message: "Order verified and saved" });
+        else {
+            await Order_1.default.create({
+                userName,
+                orderId: order_id,
+                paymentId: payment_id,
+                mobile: mobile,
+                address: address,
+                pinCode: pinCode,
+                paymentMode: "online",
+                items: cart.items,
+                amount: cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0) + 50,
+                status: Status,
+            });
+        }
+        if (Status != "captured") {
+            return res.status(500).json({ errorMessage: "payment fail" });
+        }
+        return res.status(200).json({ errorMessage: "" });
+    }
+    catch (err) {
+        return res.status(500).json({ error: err instanceof Error ? err.message : "Unknown error" });
+    }
+});
+CartRouter.post("/place-cod-order", AuthUser_1.default, async (req, res) => {
+    try {
+        const { userData, mobile, address, pinCode } = req.body;
+        const userName = userData?.userName;
+        if (!userName) {
+            return res.status(401).json({ errorMessage: "Login to place order" });
+        }
+        else {
+            const cart = await Cart_1.default.findOne({ userName });
+            if (!cart || cart.items.length === 0) {
+                return res.status(401).json({ errorMessage: "Your cart is empty" });
+            }
+            else {
+                await Order_1.default.create({
+                    userName,
+                    orderId: "order_" + Date.now(),
+                    paymentId: "",
+                    mobile: mobile,
+                    address: address,
+                    pinCode: pinCode,
+                    paymentMode: "COD",
+                    items: cart.items,
+                    amount: cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0) + 50,
+                    status: "captured",
+                });
+                return res.status(200).json({});
+            }
+        }
     }
     catch (err) {
         return res.status(500).json({ error: err instanceof Error ? err.message : "Unknown error" });

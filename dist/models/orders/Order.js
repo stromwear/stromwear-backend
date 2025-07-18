@@ -41,12 +41,15 @@ const CartItemSchema_1 = __importDefault(require("../cart/CartItemSchema")); // 
 const orderSchema = new mongoose_1.Schema({
     userName: { type: String, required: true },
     orderId: { type: String, required: true },
-    paymentId: { type: String, required: true },
+    paymentId: { type: String, required: false },
     items: { type: [CartItemSchema_1.default], required: true },
     mobile: { type: Number, require: true },
     address: { type: String, require: true },
+    trackingId: { type: String, default: "" },
     amount: { type: Number, required: true },
-    status: { type: String, enum: ["captured", "dispatched"], require: true },
+    pinCode: { type: Number, require: true },
+    paymentMode: { type: String, enum: ["online", "COD"], require: true },
+    status: { type: String, enum: ["captured", "dispatched", "failed"], require: true },
 });
 exports.default = mongoose_1.default.model("Order", orderSchema);
 //# sourceMappingURL=Order.js.map

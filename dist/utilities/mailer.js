@@ -15,11 +15,11 @@ async function sendOTP(email, otp) {
         }
     });
     const mailOptions = {
-        from: `"Gerado" <${config_1.default.GMAIL_USER}>`,
+        from: `"StromWear" <${config_1.default.GMAIL_USER}>`,
         to: email,
         subject: 'Your OTP Code',
-        text: `Your OTP is: ${otp}`,
-        html: `<p>Your <strong>OTP</strong> is: <b>${otp}</b></p>`
+        text: `Your OTP for regitering is: ${otp}`,
+        html: `<p>Your <strong>OTP for registering</strong> is: <b>${otp}</b></p> ignore if not done by you <br/> <h4 style='color:red;'>Nerver share your OTP to anyone</h4>`
     };
     await transporter.sendMail(mailOptions);
 }

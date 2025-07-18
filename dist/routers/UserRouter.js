@@ -182,7 +182,10 @@ UserRouter.get("/orders", AuthUser_1.default, async (req, res) => {
                 image: `data:image/webp;base64,${item.image.toString("base64")}`
             })),
             amount: order.amount,
+            pinCode: order.pinCode,
+            paymentMode: order.paymentMode,
             status: order.status,
+            trackingId: order.trackingId,
             mobile: order.mobile,
             address: order.address
         }));
@@ -204,7 +207,7 @@ UserRouter.get("/logout", AuthUser_1.default, async (req, res) => {
 function generatePassword(length) {
     const lowercase = 'abcdefghijklmnopqrstuvwxyz';
     const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    const digits = '123456789'; // excludes 0
+    const digits = '123456789';
     const allChars = lowercase + uppercase + digits;
     let password = '';
     for (let i = 0; i < length; i++) {
@@ -222,8 +225,18 @@ UserRouter.post("/get-otp", async (req, res) => {
             validation: false,
             errorMessage: "",
         };
+        let userName = req.body.userName;
+        if (userName == "") {
+            OTPData.errorMessage = "user name cant left empty";
+            return res.status(400).json(OTPData);
+        }
         if (!OTPData.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(OTPData.email)) {
             OTPData.errorMessage = "Invalid Email";
+            return res.status(400).json(OTPData);
+        }
+        const user = await User_1.default.findOne({ userName });
+        if (user) {
+            OTPData.errorMessage = "username already exist";
             return res.status(400).json(OTPData);
         }
         OTPData.password = generatePassword(6);

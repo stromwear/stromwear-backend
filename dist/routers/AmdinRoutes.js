@@ -88,9 +88,25 @@ AdminRouter.post("/login", [
         return res.status(500).json(err);
     }
 });
+AdminRouter.delete("/delete-prduct", AuthAdmin_1.default, async (req, res) => {
+    try {
+        const { productId } = req.body;
+        if (productId === "") {
+            return res.status(500).json({ errorMessage: "Product Id cant left empty" });
+        }
+        else {
+            await Item_1.default.findByIdAndDelete(productId);
+            return res.status(200).json({});
+        }
+    }
+    catch (err) {
+        return res.status(500).json(err);
+    }
+});
 AdminRouter.get('/orders', AuthAdmin_1.default, async (req, res) => {
     try {
-        const orders = await (await Order_1.default.find().lean()).reverse();
+        const page = parseInt(req.query.page) || 1;
+        const orders = await (await Order_1.default.find().lean().skip((page - 1) * 4).limit(4)).reverse();
         if (!orders || orders.length === 0) {
             return res.status(200).json([]);
         }
@@ -104,6 +120,9 @@ AdminRouter.get('/orders', AuthAdmin_1.default, async (req, res) => {
             })),
             amount: order.amount,
             status: order.status,
+            paymentMode: order.paymentMode,
+            pinCode: order.pinCode,
+            trackingId: order.trackingId,
             mobile: order.mobile,
             address: order.address
         }));
@@ -115,9 +134,24 @@ AdminRouter.get('/orders', AuthAdmin_1.default, async (req, res) => {
 });
 AdminRouter.patch("/dispatch", AuthAdmin_1.default, async (req, res) => {
     try {
-        const { orderId } = req.body;
+        const { orderId, trackingId } = req.body;
         if (orderId) {
-            await Order_1.default.findOneAndUpdate({ orderId }, { status: "dispatched" });
+            const order = await Order_1.default.findOneAndUpdate({ orderId: orderId }, { $set: { status: "dispatched", trackingId: trackingId } }, { new: true });
+            if (order) {
+                const { items } = order;
+                items.forEach(async (item) => {
+                    await Item_1.default.findOneAndUpdate({ _id: item.itemId }, { $inc: { [`size.${item.selectedSize}`]: -item.quantity } });
+                    const updatedItem = await Item_1.default.findById(item.itemId);
+                    if (updatedItem &&
+                        updatedItem.size.S === 0 &&
+                        updatedItem.size.M === 0 &&
+                        updatedItem.size.L === 0 &&
+                        updatedItem.size.XL === 0 &&
+                        updatedItem.size.XXL === 0) {
+                        await Item_1.default.findByIdAndDelete(item.itemId);
+                    }
+                });
+            }
             return res.status(200).json({});
         }
         else {

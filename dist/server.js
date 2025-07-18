@@ -16,16 +16,9 @@ const app = (0, express_1.default)();
 app.use((0, cookie_parser_1.default)());
 app.use(express_1.default.json());
 app.use((0, cors_1.default)({
-    origin: ["https://thegerado.com"],
+    origin: ['https://stromwear-frontend.vercel.app', 'https://www.stromwear-frontend.vercel.app'],
     credentials: true,
 }));
-app.use((req, res, next) => {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || authHeader !== `${process.env.API_KEY}`) {
-        return res.status(403).json({ message: 'Forbidden: Access' });
-    }
-    next();
-});
 app.use("/api/users", UserRouter_1.default);
 app.use("/api/admins", AmdinRoutes_1.default);
 app.use("/api/cart", CartRouter_1.default);
@@ -44,7 +37,7 @@ app.get("/", (req, res) => {
 app.get("/get-items", async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
-        const items = await Item_1.default.find().skip((page - 1) * 4).limit(4);
+        const items = await Item_1.default.find().sort({ _id: -1 }).skip((page - 1) * 4).limit(4).lean();
         const itemsData = items.map((e) => ({
             itemId: e._id,
             name: e.name,
