@@ -90,6 +90,21 @@ AdminRouter.post("/login",[
         return res.status(500).json(err);
     }
 });
+AdminRouter.delete("/delete-prduct",AuthAdmin,async(req:express.Request,res:express.Response)=>{
+    try {
+        const {productId} = req.body;
+        if(productId==="") {
+            return res.status(500).json({errorMessage:"Product Id cant left empty"});
+        }
+        else {
+            await Item.findByIdAndDelete(productId);
+            return res.status(200).json({});
+        }
+    }
+    catch(err) {
+        return res.status(500).json(err);
+    }
+})
 AdminRouter.get('/orders',AuthAdmin,async(req:express.Request,res:express.Response)=>{
     try {
         const page = parseInt(req.query.page as string) || 1;
