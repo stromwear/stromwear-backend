@@ -14,7 +14,7 @@ const app:express.Application = express();
 app.use(cookieParser());
 app.use(express.json());
 app.use(cors({
-  origin: ["https://stromwear-frontend.vercel.app"],
+  origin: ['https://stromwear-frontend.vercel.app'],
   credentials: true,
 }));
 app.use("/api/users",UserRouter);
