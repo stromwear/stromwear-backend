@@ -11,12 +11,12 @@ import { ItemView } from "./models/items/itemView";
 import { Types } from "mongoose";
 import { IItem } from "./models/items/IITems";
 const app:express.Application = express();
-app.use(cookieParser());
-app.use(express.json());
 app.use(cors({
-  origin: ['https://stromwear-frontend.vercel.app'],
+  origin: ['https://stromwear-frontend.vercel.app','https://www.stromwear-frontend.vercel.app'],
   credentials: true,
 }));
+app.use(cookieParser());
+app.use(express.json());
 app.use("/api/users",UserRouter);
 app.use("/api/admins",AdminRouter);
 app.use("/api/cart",CartRouter);
