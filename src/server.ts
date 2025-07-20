@@ -14,7 +14,7 @@ const app:express.Application = express();
 app.use(cookieParser());
 app.use(express.json({ limit: "150kb" }));
 app.use(cors({
-  origin: ['https://www.stromwear.in','https://stromwear.in'],
+  origin: ['http://localhost:3000'],
   credentials: true,
 }));
 app.use("/api/users",UserRouter);
