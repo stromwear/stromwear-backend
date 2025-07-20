@@ -195,15 +195,15 @@ UserRouter.get("/orders",AuthUser,async(req:express.Request,res:express.Response
     catch(err) {
         return res.status(500).json(err);
     }
-})
-UserRouter.get("/logout",AuthUser,async(req:express.Request,res:express.Response)=>{
-    try {
-        res.clearCookie("token");
-        return res.status(200).json({});
-    }
-    catch(err) {
-        return res.status(500).json(err);
-    }
+});
+UserRouter.get("/logout", AuthUser, async (req, res) => {
+  try {
+    res.clearCookie("token", {httpOnly: true,sameSite: "none",secure: true,domain: ".stromwear.in",path: "/",});
+    return res.status(200).json({ message: "Logged out" });
+  } 
+  catch (err) {
+    return res.status(500).json(err);
+  }
 });
 function generatePassword(length: number): string {
   const lowercase = 'abcdefghijklmnopqrstuvwxyz';

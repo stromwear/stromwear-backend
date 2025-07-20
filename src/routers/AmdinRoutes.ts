@@ -254,13 +254,13 @@ AdminRouter.get("/me",AuthAdmin,async(req:express.Request,res:express.Response)=
         return res.status(500).json(err);   
     }
 });
-AdminRouter.get("/logout",AuthAdmin,async(req:express.Request,res:express.Response)=>{
-    try {
-        res.clearCookie("adminToken");
-        return res.status(200).json({});
-    }
-    catch(err) {
-        return res.status(500).json(err);
-    }
+AdminRouter.get("/logout", AuthAdmin, async (req, res) => {
+  try {
+    res.clearCookie("adminToken", {httpOnly: true,sameSite: "none",secure: true,domain: ".stromwear.in",path: "/",});
+    return res.status(200).json({ message: "Logged out" });
+  } 
+  catch (err) {
+    return res.status(500).json(err);
+  }
 });
 export default AdminRouter;

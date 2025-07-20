@@ -245,8 +245,8 @@ AdminRouter.get("/me", AuthAdmin_1.default, async (req, res) => {
 });
 AdminRouter.get("/logout", AuthAdmin_1.default, async (req, res) => {
     try {
-        res.clearCookie("adminToken");
-        return res.status(200).json({});
+        res.clearCookie("adminToken", { httpOnly: true, sameSite: "none", secure: true, domain: ".stromwear.in", path: "/", });
+        return res.status(200).json({ message: "Logged out" });
     }
     catch (err) {
         return res.status(500).json(err);
