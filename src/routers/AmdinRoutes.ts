@@ -108,7 +108,7 @@ AdminRouter.delete("/delete-prduct",AuthAdmin,async(req:express.Request,res:expr
 AdminRouter.get('/orders',AuthAdmin,async(req:express.Request,res:express.Response)=>{
     try {
         const page = parseInt(req.query.page as string) || 1;
-        const orders:IOrder[] = await (await Order.find().lean().skip((page-1)*4).limit(4)).reverse();
+        const orders: IOrder[] = await Order.find().sort({ _id: -1 }).lean().skip((page - 1) * 4).limit(4);
         if (!orders || orders.length === 0) {
             return res.status(200).json([]);
         }
