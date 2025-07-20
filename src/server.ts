@@ -12,7 +12,7 @@ import { Types } from "mongoose";
 import { IItem } from "./models/items/IITems";
 const app:express.Application = express();
 app.use(cookieParser());
-app.use(express.json());
+app.use(express.json({ limit: "150kb" }));
 app.use(cors({
   origin: ['https://www.stromwear.in','https://stromwear.in'],
   credentials: true,

@@ -14,7 +14,7 @@ const Item_1 = __importDefault(require("./models/items/Item"));
 const CartRouter_1 = __importDefault(require("./routers/CartRouter"));
 const app = (0, express_1.default)();
 app.use((0, cookie_parser_1.default)());
-app.use(express_1.default.json());
+app.use(express_1.default.json({ limit: "150kb" }));
 app.use((0, cors_1.default)({
     origin: ['https://www.stromwear.in', 'https://stromwear.in'],
     credentials: true,
