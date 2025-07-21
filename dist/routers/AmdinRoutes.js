@@ -162,7 +162,7 @@ AdminRouter.patch("/dispatch", AuthAdmin_1.default, async (req, res) => {
         return res.status(500).json(err);
     }
 });
-AdminRouter.post("/upload", AuthAdmin_1.default, (0, express_validator_1.body)("name").not().isEmpty().withMessage("Name can not left empty"), (0, express_validator_1.body)("price").not().isEmpty().withMessage("Price can not left empty"), (0, express_validator_1.body)("image").not().isEmpty().withMessage("Imaage can not left can not left empty"), async (req, res) => {
+AdminRouter.post("/upload", AuthAdmin_1.default, (0, express_validator_1.body)("name").not().isEmpty().withMessage("Name can not left empty"), (0, express_validator_1.body)("price").not().isEmpty().withMessage("Price can not left empty"), (0, express_validator_1.body)("actualPrice").not().isEmpty().withMessage("Need to enter actual price"), (0, express_validator_1.body)("image").not().isEmpty().withMessage("Imaage can not left can not left empty"), async (req, res) => {
     try {
         let itemData = {
             itemId: '',
@@ -175,6 +175,7 @@ AdminRouter.post("/upload", AuthAdmin_1.default, (0, express_validator_1.body)("
                 XXL: req.body.size.XXL,
                 XXXL: req.body.size.XXXL
             },
+            actualPrice: req.body.actualPrice,
             price: req.body.price,
             image: req.body.image,
             packOf: req.body.packOf || 1,
@@ -222,6 +223,7 @@ AdminRouter.get("/items-list", AuthAdmin_1.default, async (req, res) => {
                 XXL: e.size.XXL,
                 XXXL: e.size.XXXL
             },
+            actualPrice: e.actualPrice,
             price: e.price,
             image: `data:image/webp;base64,${e.image.toString("base64")}`,
             packOf: e.packOf,

@@ -9,7 +9,8 @@ export interface ItemView {
         XL: number;
         XXL: number;
         XXXL: number;
-    };
+    };    
+    actualPrice:number;
     price: number;
     image: string;
     packOf: number;

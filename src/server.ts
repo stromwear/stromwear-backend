@@ -48,6 +48,7 @@ app.get("/get-items", async (req: express.Request, res: express.Response) => {
                 XXXL: e.size.XXXL
             },
             price: e.price,
+            actualPrice:e.actualPrice,
             image: `data:image/webp;base64,${e.image.toString("base64")}`,
             packOf: e.packOf,
             fabric: e.fabric,
@@ -74,6 +75,7 @@ app.get("/api/items/:ItemID",async(req:express.Request,res:express.Response)=>{
                     XXXL:items.size.XXXL
                 },
                 price:items.price,
+                actualPrice:items.actualPrice,
                 image:`data:image/webp;base64,${items.image.toString("base64")}`,
                 packOf:items.packOf,
                 fabric:items.fabric,

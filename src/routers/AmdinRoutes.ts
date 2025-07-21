@@ -171,7 +171,8 @@ AdminRouter.patch("/dispatch",AuthAdmin,async(req:express.Request,res:express.Re
 });
 AdminRouter.post("/upload",AuthAdmin,
     body("name").not().isEmpty().withMessage("Name can not left empty"),    
-    body("price").not().isEmpty().withMessage("Price can not left empty"),    
+    body("price").not().isEmpty().withMessage("Price can not left empty"),  
+    body("actualPrice").not().isEmpty().withMessage("Need to enter actual price"),  
     body("image").not().isEmpty().withMessage("Imaage can not left can not left empty"),   
 async(req:express.Request,res:express.Response)=>{
     try {
@@ -186,6 +187,7 @@ async(req:express.Request,res:express.Response)=>{
             XXL: req.body.size.XXL,
             XXXL: req.body.size.XXXL
             },
+            actualPrice:req.body.actualPrice,
             price: req.body.price,
             image: req.body.image,
             packOf: req.body.packOf || 1,
@@ -223,7 +225,7 @@ AdminRouter.get("/items-list",AuthAdmin,async(req:express.Request,res:express.Re
         const page = parseInt(req.query.page as string) || 1;
         const items = await Item.find().skip((page - 1) * 4).limit(4);
         const itemsData: ItemView[] = items.map((e) => ({
-        itemId: e._id as Types.ObjectId,
+            itemId: e._id as Types.ObjectId,
             name: e.name,
             size: {
                 S: e.size.S,
@@ -233,6 +235,7 @@ AdminRouter.get("/items-list",AuthAdmin,async(req:express.Request,res:express.Re
                 XXL: e.size.XXL,
                 XXXL: e.size.XXXL
             },
+            actualPrice:e.actualPrice,
             price: e.price,
             image: `data:image/webp;base64,${e.image.toString("base64")}`,
             packOf: e.packOf,

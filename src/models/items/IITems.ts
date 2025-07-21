@@ -9,6 +9,7 @@ export interface IItem extends Document {
         XXL: number;
         XXXL: number;
     };
+    actualPrice:number;
     price: number;
     image: Buffer;
     packOf: number;
