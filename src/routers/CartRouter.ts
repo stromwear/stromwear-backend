@@ -193,7 +193,7 @@ CartRouter.post("/verify-payment", async (req, res) => {
                 pinCode:pinCode,
                 paymentMode:"online",
                 items: cart.items,
-                amount: cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0)+50,
+                amount: cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0),
                 status:Status,
             }); 
         }
@@ -228,7 +228,7 @@ CartRouter.post("/place-cod-order",AuthUser,async(req:express.Request,res:expres
                     pinCode:pinCode,
                     paymentMode:"COD",
                     items: cart.items,
-                    amount: cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0)+50,
+                    amount: cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0),
                     status:"captured",
                 }); 
                 return res.status(200).json({});
