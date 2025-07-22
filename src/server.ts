@@ -12,7 +12,7 @@ import { Types } from "mongoose";
 import { IItem } from "./models/items/IITems";
 const app:express.Application = express();
 app.use(cookieParser());
-app.use(express.json({ limit: "150kb" }));
+app.use(express.json({ limit: "2mb" }));
 app.use(cors({
   origin: ['https://stromwear.in','https://www.stromwear.in'],
   credentials: true,
@@ -50,6 +50,9 @@ app.get("/get-items", async (req: express.Request, res: express.Response) => {
             price: e.price,
             actualPrice:e.actualPrice,
             image: `data:image/webp;base64,${e.image.toString("base64")}`,
+            image1:'',
+            image2:'',
+            image3:'',
             packOf: e.packOf,
             fabric: e.fabric,
             errorMessage: ""
@@ -77,6 +80,9 @@ app.get("/api/items/:ItemID",async(req:express.Request,res:express.Response)=>{
                 price:items.price,
                 actualPrice:items.actualPrice,
                 image:`data:image/webp;base64,${items.image.toString("base64")}`,
+                image1:`data:image/webp;base64,${items.image1.toString("base64")}`,
+                image2:`data:image/webp;base64,${items.image2.toString("base64")}`,
+                image3:`data:image/webp;base64,${items.image3.toString("base64")}`,
                 packOf:items.packOf,
                 fabric:items.fabric,
                 errorMessage:"",

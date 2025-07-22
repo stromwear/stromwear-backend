@@ -13,6 +13,9 @@ export interface ItemView {
     actualPrice:number;
     price: number;
     image: string;
+    image1: string
+    image2: string;
+    image3: string;
     packOf: number;
     fabric: string;
     errorMessage?: string;

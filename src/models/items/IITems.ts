@@ -12,6 +12,9 @@ export interface IItem extends Document {
     actualPrice:number;
     price: number;
     image: Buffer;
+    image1: Buffer;
+    image2: Buffer;
+    image3: Buffer;
     packOf: number;
     fabric: string;
 }
