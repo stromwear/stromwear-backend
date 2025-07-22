@@ -178,6 +178,9 @@ AdminRouter.post("/upload", AuthAdmin_1.default, (0, express_validator_1.body)("
             actualPrice: req.body.actualPrice,
             price: req.body.price,
             image: req.body.image,
+            image1: req.body.image1,
+            image2: req.body.image2,
+            image3: req.body.image3,
             packOf: req.body.packOf || 1,
             fabric: req.body.fabric
         };
@@ -196,8 +199,14 @@ AdminRouter.post("/upload", AuthAdmin_1.default, (0, express_validator_1.body)("
             }
             else {
                 let base64Data = itemData.image.replace(/^data:image\/webp;base64,/, "");
+                let base64Data1 = itemData.image1.replace(/^data:image\/webp;base64,/, "");
+                let base64Data2 = itemData.image2.replace(/^data:image\/webp;base64,/, "");
+                let base64Data3 = itemData.image3.replace(/^data:image\/webp;base64,/, "");
                 const buffer = Buffer.from(base64Data, 'base64');
-                let item = await new Item_1.default({ ...itemData, image: buffer });
+                const buffer1 = Buffer.from(base64Data1, 'base64');
+                const buffer2 = Buffer.from(base64Data2, 'base64');
+                const buffer3 = Buffer.from(base64Data3, 'base64');
+                let item = await new Item_1.default({ ...itemData, image: buffer, image1: buffer1, image2: buffer2, image3: buffer3 });
                 item.save();
                 itemData = {};
                 return res.status(200).json(itemData);
@@ -226,6 +235,9 @@ AdminRouter.get("/items-list", AuthAdmin_1.default, async (req, res) => {
             actualPrice: e.actualPrice,
             price: e.price,
             image: `data:image/webp;base64,${e.image.toString("base64")}`,
+            image1: `data:image/webp;base64,${e.image1.toString("base64")}`,
+            image2: `data:image/webp;base64,${e.image2.toString("base64")}`,
+            image3: `data:image/webp;base64,${e.image3.toString("base64")}`,
             packOf: e.packOf,
             fabric: e.fabric,
             errorMessage: ""

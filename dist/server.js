@@ -14,7 +14,7 @@ const Item_1 = __importDefault(require("./models/items/Item"));
 const CartRouter_1 = __importDefault(require("./routers/CartRouter"));
 const app = (0, express_1.default)();
 app.use((0, cookie_parser_1.default)());
-app.use(express_1.default.json({ limit: "150kb" }));
+app.use(express_1.default.json({ limit: "2mb" }));
 app.use((0, cors_1.default)({
     origin: ['https://stromwear.in', 'https://www.stromwear.in'],
     credentials: true,
@@ -52,6 +52,9 @@ app.get("/get-items", async (req, res) => {
             price: e.price,
             actualPrice: e.actualPrice,
             image: `data:image/webp;base64,${e.image.toString("base64")}`,
+            image1: '',
+            image2: '',
+            image3: '',
             packOf: e.packOf,
             fabric: e.fabric,
             errorMessage: ""
@@ -80,6 +83,9 @@ app.get("/api/items/:ItemID", async (req, res) => {
                 price: items.price,
                 actualPrice: items.actualPrice,
                 image: `data:image/webp;base64,${items.image.toString("base64")}`,
+                image1: `data:image/webp;base64,${items.image1.toString("base64")}`,
+                image2: `data:image/webp;base64,${items.image2.toString("base64")}`,
+                image3: `data:image/webp;base64,${items.image3.toString("base64")}`,
                 packOf: items.packOf,
                 fabric: items.fabric,
                 errorMessage: "",
