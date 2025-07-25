@@ -9,7 +9,6 @@ import { CartView } from "../models/cart/CartView";
 import Razorpay from "razorpay";
 import crypto from "crypto";
 import Order from "../models/orders/Order";
-import { ItemView } from "../models/items/itemView";
 const CartRouter = express.Router();
 const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID;
 const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET;
@@ -152,91 +151,103 @@ CartRouter.post("/create-order", async (req:express.Request, res:express.Respons
 });
 CartRouter.post("/verify-payment", async (req, res) => {
     try {
-        const { order_id, payment_id, signature,pinCode, userData,mobile,address } = req.body;
-        let Status:"captured" | "dispatched" | "failed" = "captured";
-        if (!RAZORPAY_KEY_SECRET) {
-            Status = "failed";
-        }
-        if(RAZORPAY_KEY_SECRET) {   
-            const expectedSignature = crypto.createHmac("sha256", RAZORPAY_KEY_SECRET).update(order_id + "|" + payment_id).digest("hex");
-            if (expectedSignature !== signature) {
-                Status="failed";
-            }
+        const { order_id, payment_id, signature, pinCode, userData, mobile, address } = req.body;
+        let Status: "captured" | "dispatched" | "failed" = "captured";
+        if (!RAZORPAY_KEY_SECRET) Status = "failed";
+        if (RAZORPAY_KEY_SECRET) {
+            const expectedSignature = crypto.createHmac("sha256", RAZORPAY_KEY_SECRET)
+                .update(order_id + "|" + payment_id)
+                .digest("hex");
+            if (expectedSignature !== signature) Status = "failed";
         }
         const userName = userData?.userName;
-        if (!userName) {
-            Status="failed";
-        }
+        if (!userName) Status = "failed";
         const cart = await Cart.findOne({ userName });
-        if (!cart || cart.items.length === 0) {
-            Status="failed";
-            await Order.create({
-                userName,
-                orderId: order_id,
-                paymentId:payment_id,
-                mobile:mobile,
-                address:address,
-                paymentMode:"online",
-                pinCode:pinCode,
-                items: [] as ItemView[],
-                amount: 0,
-                status:Status,
-            }); 
+        const items = cart?.items || [];
+        const order = await Order.create({
+            userName,
+            orderId: order_id,
+            paymentId: payment_id,
+            mobile,
+            address,
+            pinCode,
+            paymentMode: "online",
+            items,
+            amount: items.reduce((sum, item) => sum + item.price * item.quantity, 0),
+            status: Status,
+        });
+        if (Status !== "captured") {
+            return res.status(500).json({ errorMessage: "payment fail" });
         }
-        else {
-            await Order.create({
-                userName,
-                orderId: order_id,
-                paymentId:payment_id,
-                mobile:mobile,
-                address:address,
-                pinCode:pinCode,
-                paymentMode:"online",
-                items: cart.items,
-                amount: cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0),
-                status:Status,
-            }); 
+        for (const item of items) {
+            await Item.findOneAndUpdate(
+                { _id: item.itemId },
+                { $inc: { [`size.${item.selectedSize}`]: -item.quantity } }
+            );
+            const updatedItem = await Item.findById(item.itemId);
+            if (
+                updatedItem &&
+                updatedItem.size.S === 0 &&
+                updatedItem.size.M === 0 &&
+                updatedItem.size.L === 0 &&
+                updatedItem.size.XL === 0 &&
+                updatedItem.size.XXL === 0
+            ) {
+                await Item.findByIdAndDelete(item.itemId);
+            }
         }
-        if(Status!="captured") {
-            return res.status(500).json({errorMessage:"payment fail"});
-        }
-        return res.status(200).json({errorMessage: "" });
-    }
+
+        return res.status(200).json({ errorMessage: "" });
+    } 
     catch (err) {
         return res.status(500).json({ error: err instanceof Error ? err.message : "Unknown error" });
     }
 });
-CartRouter.post("/place-cod-order",AuthUser,async(req:express.Request,res:express.Response)=>{
+CartRouter.post("/place-cod-order", AuthUser, async (req, res) => {
     try {
-        const {userData,mobile,address,pinCode} = req.body;
+        const { userData, mobile, address, pinCode } = req.body;
         const userName = userData?.userName;
         if (!userName) {
-            return res.status(401).json({errorMessage:"Login to place order"});
+            return res.status(401).json({ errorMessage: "Login to place order" });
         }
-        else {
-            const cart = await Cart.findOne({ userName });
-            if (!cart || cart.items.length === 0) {
-                return res.status(401).json({errorMessage:"Your cart is empty"});
-            }
-            else {
-                await Order.create({
-                    userName,
-                    orderId: "order_" + Date.now(),
-                    paymentId:"",
-                    mobile:mobile,
-                    address:address,
-                    pinCode:pinCode,
-                    paymentMode:"COD",
-                    items: cart.items,
-                    amount: cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0),
-                    status:"captured",
-                }); 
-                return res.status(200).json({});
+        const cart = await Cart.findOne({ userName });
+        if (!cart || cart.items.length === 0) {
+            return res.status(401).json({ errorMessage: "Your cart is empty" });
+        }
+        const items = cart.items;
+        await Order.create({
+            userName,
+            orderId: "order_" + Date.now(),
+            paymentId: "",
+            mobile,
+            address,
+            pinCode,
+            paymentMode: "COD",
+            items,
+            amount: items.reduce((sum, item) => sum + item.price * item.quantity, 0),
+            status: "captured",
+        });
+        for (const item of items) {
+            await Item.findOneAndUpdate(
+                { _id: item.itemId },
+                { $inc: { [`size.${item.selectedSize}`]: -item.quantity } }
+            );
+            const updatedItem = await Item.findById(item.itemId);
+            if (
+                updatedItem &&
+                updatedItem.size.S === 0 &&
+                updatedItem.size.M === 0 &&
+                updatedItem.size.L === 0 &&
+                updatedItem.size.XL === 0 &&
+                updatedItem.size.XXL === 0
+            ) {
+                await Item.findByIdAndDelete(item.itemId);
             }
         }
-    }
-    catch(err) {
-        return res.status(500).json({error: err instanceof Error ? err.message : "Unknown error"});
+        return res.status(200).json({});
+    } 
+    catch (err) {
+        return res.status(500).json({ error: err instanceof Error ? err.message : "Unknown error" });
     }
 });
 export default CartRouter;

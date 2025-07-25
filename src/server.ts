@@ -53,7 +53,6 @@ app.get("/get-items", async (req: express.Request, res: express.Response) => {
             image1:'',
             image2:'',
             image3:'',
-            packOf: e.packOf,
             fabric: e.fabric,
             errorMessage: ""
         }));
@@ -83,7 +82,6 @@ app.get("/api/items/:ItemID",async(req:express.Request,res:express.Response)=>{
                 image1:`data:image/webp;base64,${items.image1.toString("base64")}`,
                 image2:`data:image/webp;base64,${items.image2.toString("base64")}`,
                 image3:`data:image/webp;base64,${items.image3.toString("base64")}`,
-                packOf:items.packOf,
                 fabric:items.fabric,
                 errorMessage:"",
             }

@@ -15,6 +15,5 @@ export interface IItem extends Document {
     image1: Buffer;
     image2: Buffer;
     image3: Buffer;
-    packOf: number;
     fabric: string;
 }

@@ -16,7 +16,6 @@ export interface ItemView {
     image1: string
     image2: string;
     image3: string;
-    packOf: number;
     fabric: string;
     errorMessage?: string;
 }

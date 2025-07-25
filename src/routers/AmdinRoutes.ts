@@ -139,26 +139,6 @@ AdminRouter.patch("/dispatch",AuthAdmin,async(req:express.Request,res:express.Re
         const {orderId,trackingId} = req.body;
         if(orderId) {
             const order:IOrder | null = await Order.findOneAndUpdate({ orderId: orderId },{ $set: { status: "dispatched", trackingId: trackingId } },{ new: true });
-            if(order) {
-                const {items} = order;
-                items.forEach(async (item) => {
-                    await Item.findOneAndUpdate(
-                        { _id: item.itemId },
-                        { $inc: { [`size.${item.selectedSize}`]: -item.quantity } }
-                    );
-                    const updatedItem = await Item.findById(item.itemId);
-                    if (
-                        updatedItem &&
-                        updatedItem.size.S === 0 &&
-                        updatedItem.size.M === 0 &&
-                        updatedItem.size.L === 0 &&
-                        updatedItem.size.XL === 0 &&
-                        updatedItem.size.XXL === 0
-                    ) {
-                        await Item.findByIdAndDelete(item.itemId);
-                    }
-                });
-            }
             return res.status(200).json({});
         }
         else {
@@ -193,7 +173,6 @@ async(req:express.Request,res:express.Response)=>{
             image1: req.body.image1,
             image2: req.body.image2,
             image3: req.body.image3,
-            packOf: req.body.packOf || 1,
             fabric: req.body.fabric
         }
         let errors = validationResult(req);
@@ -250,7 +229,6 @@ AdminRouter.get("/items-list",AuthAdmin,async(req:express.Request,res:express.Re
             image1: `data:image/webp;base64,${e.image1.toString("base64")}`,
             image2: `data:image/webp;base64,${e.image2.toString("base64")}`,
             image3: `data:image/webp;base64,${e.image3.toString("base64")}`,
-            packOf: e.packOf,
             fabric: e.fabric,
             errorMessage: ""
         }));

@@ -17,7 +17,6 @@ const itemSchema: Schema = new mongoose.Schema({
     image2: { type: Buffer, required: true },
     image3: { type: Buffer, required: true },
     actualPrice:{type:Number, require:true},
-    packOf: { type: Number},
     fabric: { type: String }
 });
 
