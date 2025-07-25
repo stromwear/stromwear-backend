@@ -20,7 +20,6 @@ const itemSchema = new mongoose_1.default.Schema({
     image2: { type: Buffer, required: true },
     image3: { type: Buffer, required: true },
     actualPrice: { type: Number, require: true },
-    packOf: { type: Number },
     fabric: { type: String }
 });
 exports.default = mongoose_1.default.model("items", itemSchema);

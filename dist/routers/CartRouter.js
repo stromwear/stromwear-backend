@@ -151,51 +151,46 @@ CartRouter.post("/verify-payment", async (req, res) => {
     try {
         const { order_id, payment_id, signature, pinCode, userData, mobile, address } = req.body;
         let Status = "captured";
-        if (!RAZORPAY_KEY_SECRET) {
+        if (!RAZORPAY_KEY_SECRET)
             Status = "failed";
-        }
         if (RAZORPAY_KEY_SECRET) {
-            const expectedSignature = crypto_1.default.createHmac("sha256", RAZORPAY_KEY_SECRET).update(order_id + "|" + payment_id).digest("hex");
-            if (expectedSignature !== signature) {
+            const expectedSignature = crypto_1.default.createHmac("sha256", RAZORPAY_KEY_SECRET)
+                .update(order_id + "|" + payment_id)
+                .digest("hex");
+            if (expectedSignature !== signature)
                 Status = "failed";
-            }
         }
         const userName = userData?.userName;
-        if (!userName) {
+        if (!userName)
             Status = "failed";
-        }
         const cart = await Cart_1.default.findOne({ userName });
-        if (!cart || cart.items.length === 0) {
-            Status = "failed";
-            await Order_1.default.create({
-                userName,
-                orderId: order_id,
-                paymentId: payment_id,
-                mobile: mobile,
-                address: address,
-                paymentMode: "online",
-                pinCode: pinCode,
-                items: [],
-                amount: 0,
-                status: Status,
-            });
-        }
-        else {
-            await Order_1.default.create({
-                userName,
-                orderId: order_id,
-                paymentId: payment_id,
-                mobile: mobile,
-                address: address,
-                pinCode: pinCode,
-                paymentMode: "online",
-                items: cart.items,
-                amount: cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0),
-                status: Status,
-            });
-        }
-        if (Status != "captured") {
+        const items = cart?.items || [];
+        const order = await Order_1.default.create({
+            userName,
+            orderId: order_id,
+            paymentId: payment_id,
+            mobile,
+            address,
+            pinCode,
+            paymentMode: "online",
+            items,
+            amount: items.reduce((sum, item) => sum + item.price * item.quantity, 0),
+            status: Status,
+        });
+        if (Status !== "captured") {
             return res.status(500).json({ errorMessage: "payment fail" });
+        }
+        for (const item of items) {
+            await Item_1.default.findOneAndUpdate({ _id: item.itemId }, { $inc: { [`size.${item.selectedSize}`]: -item.quantity } });
+            const updatedItem = await Item_1.default.findById(item.itemId);
+            if (updatedItem &&
+                updatedItem.size.S === 0 &&
+                updatedItem.size.M === 0 &&
+                updatedItem.size.L === 0 &&
+                updatedItem.size.XL === 0 &&
+                updatedItem.size.XXL === 0) {
+                await Item_1.default.findByIdAndDelete(item.itemId);
+            }
         }
         return res.status(200).json({ errorMessage: "" });
     }
@@ -210,27 +205,36 @@ CartRouter.post("/place-cod-order", AuthUser_1.default, async (req, res) => {
         if (!userName) {
             return res.status(401).json({ errorMessage: "Login to place order" });
         }
-        else {
-            const cart = await Cart_1.default.findOne({ userName });
-            if (!cart || cart.items.length === 0) {
-                return res.status(401).json({ errorMessage: "Your cart is empty" });
-            }
-            else {
-                await Order_1.default.create({
-                    userName,
-                    orderId: "order_" + Date.now(),
-                    paymentId: "",
-                    mobile: mobile,
-                    address: address,
-                    pinCode: pinCode,
-                    paymentMode: "COD",
-                    items: cart.items,
-                    amount: cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0),
-                    status: "captured",
-                });
-                return res.status(200).json({});
+        const cart = await Cart_1.default.findOne({ userName });
+        if (!cart || cart.items.length === 0) {
+            return res.status(401).json({ errorMessage: "Your cart is empty" });
+        }
+        const items = cart.items;
+        await Order_1.default.create({
+            userName,
+            orderId: "order_" + Date.now(),
+            paymentId: "",
+            mobile,
+            address,
+            pinCode,
+            paymentMode: "COD",
+            items,
+            amount: items.reduce((sum, item) => sum + item.price * item.quantity, 0),
+            status: "captured",
+        });
+        for (const item of items) {
+            await Item_1.default.findOneAndUpdate({ _id: item.itemId }, { $inc: { [`size.${item.selectedSize}`]: -item.quantity } });
+            const updatedItem = await Item_1.default.findById(item.itemId);
+            if (updatedItem &&
+                updatedItem.size.S === 0 &&
+                updatedItem.size.M === 0 &&
+                updatedItem.size.L === 0 &&
+                updatedItem.size.XL === 0 &&
+                updatedItem.size.XXL === 0) {
+                await Item_1.default.findByIdAndDelete(item.itemId);
             }
         }
+        return res.status(200).json({});
     }
     catch (err) {
         return res.status(500).json({ error: err instanceof Error ? err.message : "Unknown error" });
