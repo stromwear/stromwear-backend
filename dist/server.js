@@ -98,6 +98,16 @@ app.get("/api/items/:ItemID", async (req, res) => {
         return res.status(500).json(err);
     }
 });
+app.get("/get-all-item-ids", async (req, res) => {
+    try {
+        const ids = await Item_1.default.find({}, { _id: 1 }).lean();
+        const productIds = ids.map((item) => item._id.toString());
+        return res.status(200).json(productIds);
+    }
+    catch (err) {
+        return res.status(500).json(err);
+    }
+});
 if (config_1.default.PORT) {
     app.listen(config_1.default.PORT, () => {
         console.log("server started");

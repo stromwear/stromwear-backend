@@ -95,6 +95,15 @@ app.get("/api/items/:ItemID",async(req:express.Request,res:express.Response)=>{
         return res.status(500).json(err);
     }
 });
+app.get("/get-all-item-ids", async (req: express.Request, res: express.Response) => {
+  try {
+    const ids = await Item.find({}, { _id: 1 }).lean();
+    const productIds = ids.map((item) => item._id.toString());
+    return res.status(200).json(productIds);
+  } catch (err) {
+    return res.status(500).json(err);
+  }
+});
 if(config.PORT) {
     app.listen(config.PORT,()=>{
         console.log("server started");
