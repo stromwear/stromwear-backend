@@ -35,7 +35,7 @@ app.get("/",(req:express.Request, res:express.Response) => {
 app.get("/get-items", async (req: express.Request, res: express.Response) => {
     try {
         const page = parseInt(req.query.page as string) || 1;
-        const items = await Item.find().sort({ _id: -1 }).skip((page - 1) * 4).limit(4).lean();
+        const items = await Item.find().sort({ _id: -1 }).skip((page - 1) * 8).limit(8).lean();
         const itemsData: ItemView[] = items.map((e) => ({
             itemId: e._id as Types.ObjectId,
             name: e.name,

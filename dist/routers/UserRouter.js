@@ -298,5 +298,39 @@ UserRouter.patch("/validate-otp", async (req, res) => {
         return res.status(500).json(err);
     }
 });
+UserRouter.patch("/reset-password", async (req, res) => {
+    try {
+        let passwordData = {
+            otp: req.body.otp,
+            newPassword: req.body.password,
+            email: req.body.email,
+            lastSent: new Date(),
+        };
+        const otp = await OTP_1.default.findOne({ email: passwordData.email });
+        if (otp) {
+            if (otp.lastSent) {
+                const expiry = new Date(otp.lastSent.getTime() + 2 * 60 * 1000);
+                if (passwordData.lastSent > expiry) {
+                    return res.status(500).json({ errorMessage: "OTP Expired" });
+                }
+                else {
+                    if (await bcryptjs_1.default.compare(passwordData.otp, otp.password)) {
+                        await OTP_1.default.findOneAndUpdate({ email: passwordData.email }, { validation: true });
+                        const salt = await bcryptjs_1.default.genSalt(10);
+                        passwordData.newPassword = await bcryptjs_1.default.hash(passwordData.newPassword, salt);
+                        await User_1.default.findOneAndUpdate({ email: passwordData.email }, { password: passwordData.newPassword });
+                        return res.status(200).json({});
+                    }
+                    else {
+                        return res.status(500).json({ errorMessage: "Invalid OTP" });
+                    }
+                }
+            }
+        }
+    }
+    catch (err) {
+        return res.status(500).json({ error: err });
+    }
+});
 exports.default = UserRouter;
 //# sourceMappingURL=UserRouter.js.map

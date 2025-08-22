@@ -37,7 +37,7 @@ app.get("/", (req, res) => {
 app.get("/get-items", async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
-        const items = await Item_1.default.find().sort({ _id: -1 }).skip((page - 1) * 4).limit(4).lean();
+        const items = await Item_1.default.find().sort({ _id: -1 }).skip((page - 1) * 8).limit(8).lean();
         const itemsData = items.map((e) => ({
             itemId: e._id,
             name: e.name,

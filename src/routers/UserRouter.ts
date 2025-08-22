@@ -299,4 +299,38 @@ UserRouter.patch("/validate-otp",async(req:express.Request,res:express.Response)
         return res.status(500).json(err);
     }
 });
+UserRouter.patch("/reset-password",async(req:express.Request,res:express.Response)=>{
+    try {
+        let passwordData = {
+            otp:req.body.otp,
+            newPassword:req.body.password,
+            email:req.body.email,
+            lastSent:new Date(),
+        }
+        const otp:IOTP | null = await OTP.findOne({email:passwordData.email});
+        if(otp) {
+            if(otp.lastSent) {
+                const expiry = new Date(otp.lastSent.getTime()+2*60*1000);
+                if(passwordData.lastSent>expiry) {
+                    return res.status(500).json({errorMessage:"OTP Expired"});
+                }
+                else {
+                    if(await bcrypt.compare(passwordData.otp,otp.password)) {
+                        await OTP.findOneAndUpdate({email:passwordData.email},{validation:true});
+                        const salt:string = await bcrypt.genSalt(10);
+                        passwordData.newPassword = await bcrypt.hash(passwordData.newPassword,salt);
+                        await User.findOneAndUpdate({email:passwordData.email},{password:passwordData.newPassword});
+                        return res.status(200).json({});
+                    }
+                    else {
+                        return res.status(500).json({errorMessage:"Invalid OTP"});
+                    }
+                }
+            }
+        }
+    }
+    catch(err) {
+        return res.status(500).json({error:err});
+    }
+});
 export default UserRouter;
