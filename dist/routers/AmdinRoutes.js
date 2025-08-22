@@ -16,6 +16,7 @@ const AdminRouter = express_1.default.Router();
 AdminRouter.post("/login", [
     (0, express_validator_1.body)("userName").not().isEmpty().withMessage("User Name can not left empty"),
     (0, express_validator_1.body)("password").not().isEmpty().withMessage("Password can not left empty"),
+    (0, express_validator_1.body)("captchaToken").not().isEmpty().withMessage("Captcha validation required"),
 ], async (req, res) => {
     let userData = {
         firstName: "",
@@ -30,62 +31,54 @@ AdminRouter.post("/login", [
     try {
         let errors = (0, express_validator_1.validationResult)(req);
         if (!errors.isEmpty()) {
-            userData = {};
             const errorArray = errors.array();
+            userData = {};
             userData.errorMessage = errorArray.length > 0 ? errorArray[0].msg : "Validation error";
             return res.status(400).json(userData);
         }
-        else {
-            let token = await req.cookies["token"];
-            let adminToken = await req.cookies["adminToken"];
-            if (token || adminToken) {
+        const captchaResponse = await axios.post("https://www.google.com/recaptcha/api/siteverify", null, {
+            params: {
+                secret: process.env.RECAPTCHA_SECRET_KEY,
+                response: req.body.captchaToken,
+            },
+        });
+        const captchaData = captchaResponse.data;
+        if (!captchaData.success) {
+            userData = {};
+            userData.errorMessage = "Captcha verification failed";
+            return res.status(400).json(userData);
+        }
+        let token = req.cookies["token"];
+        let adminToken = req.cookies["adminToken"];
+        if (token || adminToken) {
+            userData = {};
+            userData.errorMessage = "you have already loged in";
+            return res.status(400).json(userData);
+        }
+        let user = await User_1.default.findOne({
+            $or: [{ userName: userData.userName }, { email: userData.userName }],
+        });
+        if (user && await bcryptjs_1.default.compare(userData.password, user.password)) {
+            if (!user.isAdmin) {
                 userData = {};
-                userData.errorMessage = "you have already loged in";
-                return res.status(400).json(userData);
+                userData.errorMessage = "You have no access to this service";
+                return res.status(401).json(userData);
             }
-            else {
-                let user = await User_1.default.findOne({ $or: [{ userName: userData.userName }, { email: userData.userName }] });
-                if (user) {
-                    if (await bcryptjs_1.default.compare(userData.password, user.password)) {
-                        let payLoad = {
-                            firstName: user.firstName,
-                            lastName: user.lastName,
-                            email: user.email,
-                        };
-                        if (!user.isAdmin) {
-                            userData = {};
-                            userData.errorMessage = "You have no access to this service";
-                            return res.status(401).json(userData);
-                        }
-                        if (config_1.default.ADMIN_SECRET_KEY) {
-                            let token = jsonwebtoken_1.default.sign(payLoad, config_1.default.ADMIN_SECRET_KEY);
-                            user = await User_1.default.findOneAndUpdate({ userName: user.userName }, { lastLogIn: new Date() });
-                            userData = {};
-                            res.cookie("adminToken", token, { httpOnly: true, sameSite: 'none', secure: true, domain: '.stromwear.in', path: '/', maxAge: 1000 * 60 * 60 * 24 * 30, });
-                            return res.status(200).json(userData);
-                        }
-                        else {
-                            userData = {};
-                            userData.errorMessage = "Something went wrong. Our team has been notified and is working on a fix.";
-                            return res.status(500).json(userData);
-                        }
-                    }
-                    else {
-                        userData = {};
-                        userData.errorMessage = "Invalid Password";
-                        return res.status(400).json(userData);
-                    }
-                }
-                else {
-                    userData = {};
-                    userData.errorMessage = "Username or email dose not exist";
-                    return res.status(400).json(userData);
-                }
+            if (config_1.default.ADMIN_SECRET_KEY) {
+                let payLoad = { firstName: user.firstName, lastName: user.lastName, email: user.email };
+                let token = jsonwebtoken_1.default.sign(payLoad, config_1.default.ADMIN_SECRET_KEY);
+                user = await User_1.default.findOneAndUpdate({ userName: user.userName }, { lastLogIn: new Date() });
+                userData = {};
+                res.cookie("adminToken", token, { httpOnly: true, sameSite: 'none', secure: true, domain: '.stromwear.in', path: '/', maxAge: 1000 * 60 * 60 * 24 * 30, });
+                return res.status(200).json(userData);
             }
         }
+        userData = {};
+        userData.errorMessage = "Invalid credentials";
+        return res.status(400).json(userData);
     }
     catch (err) {
-        return res.status(500).json(err);
+        return res.status(500).json({ error: "Server error", details: err });
     }
 });
 AdminRouter.delete("/delete-prduct", AuthAdmin_1.default, async (req, res) => {
