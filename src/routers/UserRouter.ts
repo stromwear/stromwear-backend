@@ -83,71 +83,79 @@ UserRouter.post("/register",[
         return res.status(500).json(err);
     }
 });
-UserRouter.post("/login", [
+UserRouter.post("/login",[
     body("userName").not().isEmpty().withMessage("User Name can not left empty"),
     body("password").not().isEmpty().withMessage("Password can not left empty"),
-    body("captchaToken").not().isEmpty().withMessage("Captcha validation required"),
-], async (req: express.Request, res: express.Response) => {
-    let userData: UserView = {
-        firstName: "",
-        lastName: "",
-        email: "",
-        userName: req.body.userName,
-        password: req.body.password,
-        errorMessage: "",
-        isAdmin: false,
-        lastLogIn: null,
-    };
+],async(req:express.Request,res:express.Response)=>{
+    let userData:UserView = {
+        firstName:"",
+        lastName:"",
+        email:"",
+        userName:req.body.userName,
+        password:req.body.password,
+        errorMessage:"",
+        isAdmin:false,
+        lastLogIn:null,
+    }
     try {
         let errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            const errorArray = errors.array();
+        if(!errors.isEmpty()) {
             userData = {} as UserView;
+            const errorArray = errors.array();
             userData.errorMessage = errorArray.length > 0 ? errorArray[0].msg : "Validation error";
             return res.status(400).json(userData);
         }
-        const captchaVerifyUrl = `https://www.google.com/recaptcha/api/siteverify`;
-        const captchaResponse = await axios.post(captchaVerifyUrl, null, {
-            params: {
-                secret: process.env.RECAPTCHA_SECRET_KEY,
-                response: req.body.captchaToken,
-            },
-        });
-        const captchaData = captchaResponse.data as { success: boolean };
-        if (!captchaData.success) {
-            userData = {} as UserView;
-            userData.errorMessage = "Captcha verification failed";
-            return res.status(400).json(userData);
-        }
-        let token = req.cookies["token"];
-        let adminToken = req.cookies["adminToken"];
-        if (token || adminToken) {
-            userData = {} as UserView;
-            userData.errorMessage = "you have already loged in";
-            return res.status(400).json(userData);
-        }
-        let user: IUser | null = await User.findOne({$or:[{userName:userData.userName},{email:userData.userName}],});
-        if (user && await bcrypt.compare(userData.password, user.password)) {
-            if (user.isAdmin) {
+        else {
+            let token = await req.cookies["token"];
+            let adminToken = await req.cookies["adminToken"];
+            if(token || adminToken) {    
                 userData = {} as UserView;
-                userData.errorMessage = "You have to login at admins page";
-                return res.status(401).json(userData);
-            } 
-            else if (config.CLIENT_SECRET_KEY) {
-                let payLoad = { firstName: user.firstName, lastName: user.lastName, email: user.email };
-                let token: string = jwt.sign(payLoad, config.CLIENT_SECRET_KEY);
-                user = await User.findOneAndUpdate({ userName: user.userName }, { lastLogIn: new Date() });
-                userData = {} as UserView;
-                res.cookie("token", token, {httpOnly: true,sameSite: "none",secure: true,domain: ".stromwear.in",path: "/",maxAge: 1000 * 60 * 60 * 24 * 30 });
-                return res.status(200).json(userData);
+                userData.errorMessage = "you have already loged in";
+                return res.status(400).json(userData);
+            }
+            else {
+                let user:IUser | null = await User.findOne({$or: [{ userName: userData.userName },{ email: userData.userName }]});
+                if(user) {
+                    if(await bcrypt.compare(userData.password,user.password)) {
+                        let payLoad = {
+                            firstName:user.firstName,
+                            lastName:user.lastName,
+                            email:user.email,
+                        }
+                        if(user.isAdmin) {
+                            userData = {} as UserView;
+                                userData.errorMessage = "You have to login at admins page";
+                                return res.status(401).json(userData);
+                            }
+                        else if(config.CLIENT_SECRET_KEY) {
+                            let token:string = jwt.sign(payLoad,config.CLIENT_SECRET_KEY);
+                            user = await User.findOneAndUpdate({userName:user.userName},{lastLogIn:new Date()});
+                            userData = {} as UserView;
+                            res.cookie("token", token, {httpOnly: true,sameSite: 'none',secure: true,domain: '.stromwear.in',path: '/',maxAge: 1000 * 60 * 60 * 24 * 30,}); 
+                            return res.status(200).json(userData);
+                        }
+                        else {
+                            userData = {} as UserView;
+                            userData.errorMessage = "Something went wrong. Our team has been notified and is working on a fix.";
+                            return res.status(500).json(userData);
+                        }
+                    }
+                    else {
+                        userData = {} as UserView;
+                        userData.errorMessage = "Invalid Password";
+                        return res.status(400).json(userData);
+                    }
+                }
+                else {
+                    userData = {} as UserView;
+                    userData.errorMessage = "Username or email dose not exist";
+                    return res.status(400).json(userData);
+                }
             }
         }
-        userData = {} as UserView;
-        userData.errorMessage = "Invalid credentials";
-        return res.status(400).json(userData);
-    } 
-    catch (err) {
-        return res.status(500).json({ error: "Server error", details: err });
+    }
+    catch(err) {
+        return res.status(500).json(err);
     }
 });
 UserRouter.get("/me",AuthUser,async(req:express.Request,res:express.Response)=>{
@@ -190,7 +198,7 @@ UserRouter.get("/orders",AuthUser,async(req:express.Request,res:express.Response
 });
 UserRouter.get("/logout", AuthUser, async (req, res) => {
   try {
-    res.clearCookie("token", {httpOnly: true,sameSite: "none",secure: false,path: "/",});
+    res.clearCookie("token", {httpOnly: true,sameSite: "none",secure: true,domain: ".stromwear.in",path: "/",});
     return res.status(200).json({ message: "Logged out" });
   }     
   catch (err) {
