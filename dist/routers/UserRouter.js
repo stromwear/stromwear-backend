@@ -97,6 +97,12 @@ UserRouter.post("/login", [
         lastLogIn: null,
     };
     try {
+        const captchaToken = req.body.captchaToken;
+        if (!captchaToken) {
+            userData = {};
+            userData.errorMessage = "Captcha is required";
+            return res.status(400).json(userData);
+        }
         let errors = (0, express_validator_1.validationResult)(req);
         if (!errors.isEmpty()) {
             userData = {};
@@ -105,6 +111,22 @@ UserRouter.post("/login", [
             return res.status(400).json(userData);
         }
         else {
+            const captchaRes = await fetch("https://www.google.com/recaptcha/api/siteverify", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                },
+                body: new URLSearchParams({
+                    secret: process.env.RECAPTCHA_SECRET_KEY || "",
+                    response: captchaToken,
+                }).toString(),
+            });
+            const captchaData = await captchaRes.json();
+            if (!captchaData.success) {
+                userData = {};
+                userData.errorMessage = "Captcha verification failed";
+                return res.status(400).json(userData);
+            }
             let token = await req.cookies["token"];
             let adminToken = await req.cookies["adminToken"];
             if (token || adminToken) {
