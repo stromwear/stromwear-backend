@@ -238,6 +238,37 @@ function generatePassword(length) {
     }
     return password;
 }
+UserRouter.post("/get-otp-for-reset", async (req, res) => {
+    try {
+        let OTPData = {
+            email: req.body.email,
+            password: "",
+            lastSent: new Date(),
+            validation: false,
+            errorMessage: "",
+        };
+        if (!OTPData.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(OTPData.email)) {
+            OTPData.errorMessage = "Invalid Email";
+            return res.status(400).json(OTPData);
+        }
+        OTPData.password = generatePassword(6);
+        await (0, mailer_1.sendResetOTP)(OTPData.email, OTPData.password);
+        let salt = await bcryptjs_1.default.genSalt(10);
+        OTPData.password = await bcryptjs_1.default.hash(OTPData.password, salt);
+        const otp = await OTP_1.default.findOne({ email: OTPData.email });
+        if (otp) {
+            await OTP_1.default.findOneAndUpdate({ email: OTPData.email }, OTPData);
+        }
+        else {
+            const newOTP = await new OTP_1.default(OTPData);
+            newOTP?.save();
+        }
+        return res.status(200).json({});
+    }
+    catch (err) {
+        return res.status(500).json({ error: err });
+    }
+});
 UserRouter.post("/get-otp", async (req, res) => {
     try {
         let OTPData = {

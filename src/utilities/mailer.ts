@@ -17,3 +17,20 @@ export async function sendOTP(email: string, otp: string): Promise<void> {
   };
   await transporter.sendMail(mailOptions);
 }
+export async function sendResetOTP(email: string, otp: string): Promise<void> {
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: config.GMAIL_USER,  
+      pass: config.GMAIL_APP_PASSWORD   
+    }
+  });
+  const mailOptions = {
+    from: `"StromWear" <${config.GMAIL_USER}>`,
+    to: email,
+    subject: 'Your OTP Code',
+    text: `Your OTP to reset your password is: ${otp}`,
+    html: `<p>Your <strong>OTP to Reset password</strong> is: <b>${otp}</b></p> ignore if not done by you <br/> <h4 style='color:red;'>Nerver share your OTP to anyone</h4>`
+  };
+  await transporter.sendMail(mailOptions);
+}
